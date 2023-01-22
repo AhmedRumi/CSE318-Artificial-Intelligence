@@ -11,7 +11,7 @@ public:
     int no_of_students;
     int status;
 
-    vector<int>conflictingCourses;
+    vector<int>conflictingCourses;  // indexes of the courses
 
     Course(int course_id,int no_of_students)
     {
@@ -39,7 +39,7 @@ class Student
 {
 public:
     int student_id;
-    vector<int>EnrolledCourses;
+    vector<int>EnrolledCourses;  // indexes of the courses
 
     Student(int id)
     {
@@ -53,7 +53,7 @@ public:
 
 };
 
-vector<Course>courses;
+vector<Course>courses;    // global array for courses and students
 vector<Student>students;
 
 
@@ -62,6 +62,41 @@ bool cmp1(int c1,int c2) {
 }
 bool cmp2(int c1,int c2) {
     return courses[c1].no_of_students>courses[c2].no_of_students;
+}
+
+double CalculatePenalty(string type)
+{
+    int n=students.size();
+    double penalty=0;
+
+    for(int i=0;i<students.size();i++)
+    {
+        vector<int>t;
+        for(int j=0;j<students[i].EnrolledCourses.size();j++)
+        {
+            Course c=courses[students[i].EnrolledCourses[j]];
+            t.push_back(c.timeslot);
+        }
+
+        sort(t.begin(),t.end());
+        for(int j=0;j<t.size()-1;j++)
+        {
+            if(t[j+1]-t[j]<=5)
+            {
+                if(type=="expo")
+                {
+                   penalty+=pow(2,5-t[j+1]+t[j]);
+                }
+                else
+                {
+                    penalty+=2*(5-t[j+1]+t[j]);
+                }
+            }
+        }
+    }
+
+    penalty=penalty/n;
+    return penalty;
 }
 
 class ConstructiveHeuristicSolver
@@ -75,14 +110,10 @@ public:
         for(int i=0;i<n;i++)
         {
             int ind=order[i];
-            //cout<<courses[0].timeslot<<"  "<<courses[1].timeslot<<"  "<<courses[2].timeslot<<endl;
             vector<bool>col(n,false);
-            //cout<<courses[i].course_id<<" "<<courses[i].conflictingCourses.size()<<endl;
             for(int j=0;j<courses[ind].conflictingCourses.size();j++)
             {
                 int temp=courses[courses[ind].conflictingCourses[j]].timeslot;
-                //cout<<i<<"  "<<courses[i].conflictingCourses[j]->conflictingCourses.size()<<endl;
-                //cout<<temp<<endl;
                 if(temp!=-1)
                 {
                     col[temp]=true;
@@ -96,12 +127,10 @@ public:
                if(col[j]==false)
                {
                    courses[ind].timeslot=j;
-                   //cout<<j<<endl;
                    time_slot_count=max(time_slot_count,j);
                    break;
                }
            }
-           //cout<<courses[i].timeslot<<endl;
         }
 
         return time_slot_count+1;
@@ -145,7 +174,6 @@ public:
 
         for(int k=0;k<n;k++)
         {
-            //cout<<k<<" "<<n<<endl;
             int id=-1;
             int mx_sat=-1,mx_deg=-1;
             for(int i=0;i<n;i++)
@@ -158,14 +186,12 @@ public:
                     mx_deg=deg[i];
                 }
             }
-            //cout<<k<<" "<<id<<endl;
             vector<bool>used(n,false);
             for(int i=0;i<courses[id].conflictingCourses.size();i++)
             {
                 Course c=courses[courses[id].conflictingCourses[i]];
                 if(c.timeslot!=-1)used[c.timeslot]=true;
             }
-            //cout<<k<<endl;
             for(int i=0;i<n;i++)
             {
                 if(used[i]==false)
@@ -175,7 +201,6 @@ public:
                     break;
                 }
             }
-            //cout<<k<<endl;
             for(int i=0;i<courses[id].conflictingCourses.size();i++)
             {
                 int cid=courses[id].conflictingCourses[i];
@@ -213,42 +238,6 @@ public:
 
 };
 
-double CalculatePenalty(string type)
-{
-    int n=students.size();
-    double penalty=0;
-
-    for(int i=0;i<students.size();i++)
-    {
-        //cout<<"1111"<<endl;
-        vector<int>t;
-        for(int j=0;j<students[i].EnrolledCourses.size();j++)
-        {
-            Course c=courses[students[i].EnrolledCourses[j]];
-            t.push_back(c.timeslot);
-            //cout<<c.timeslot<<endl;
-        }
-        //cout<<1<<endl;
-        sort(t.begin(),t.end());
-        for(int j=0;j<t.size()-1;j++)
-        {
-            if(t[j+1]-t[j]<=5)
-            {
-                if(type=="expo")
-                {
-                   penalty+=pow(2,5-t[j+1]+t[j]);
-                }
-                else
-                {
-                    penalty+=2*(5-t[j+1]+t[j]);
-                }
-            }
-        }
-    }
-
-    penalty=penalty/n;
-    return penalty;
-}
 
 class PerturburativeHeuristicSolver
 {
@@ -274,14 +263,12 @@ public:
 
         DFS(courseid,neighbour_slot);
         int own_slot=courses[courseid].timeslot;
-        //cout<<"    "<<courses[courseid].timeslot<<" "<<neighbour_slot<<endl;
         double prev_penalty=CalculatePenalty(penalty_type);
 
         for(int i=0;i<courses.size();i++)
         {
             if(courses[i].status==1)
             {
-                //cout<<i<<" "<<courses[i].timeslot<<endl;
                 if(courses[i].timeslot==own_slot)
                 {
                     courses[i].timeslot=neighbour_slot;
@@ -289,21 +276,17 @@ public:
                 else
                 {
                     courses[i].timeslot=own_slot;
-                    //cout<<i<<" "<<courses[i].timeslot<<endl;
                 }
-                //cout<<i<<" "<<courses[i].timeslot<<endl;
             }
         }
 
         double curr_penalty=CalculatePenalty(penalty_type);
-        //cout<<prev_penalty<<" "<<curr_penalty<<endl;
         if(prev_penalty<=curr_penalty)
         {
             for(int i=0;i<courses.size();i++)
             {
                 if(courses[i].status==1)
                 {
-                    //cout<<i<<" "<<courses[i].timeslot<<endl;
                     if(courses[i].timeslot==own_slot)
                     {
                         courses[i].timeslot=neighbour_slot;
@@ -369,11 +352,10 @@ public:
 
     void ReducePenalty(string type,string penalty_type)
     {
-        for(int i=1;i<=5000;i++)
+        for(int i=1;i<=2000;i++)
         {
             if(type=="kempe")
             {
-                if(i%100==0)cout<<i<<endl;
                 int course_id=rand()%courses.size();
                 if(!courses[course_id].conflictingCourses.empty())
                 {
@@ -453,6 +435,15 @@ public:
         cout<<"DSatur"<<endl;
         cout<<"time slots: "<<slots<<endl;
         cout<<"penalty: "<<penalty<<endl;
+         for(int i=0;i<courses.size();i++)
+    {
+        if(courses[i].timeslot==-1)cout<<0<<endl;
+        for(int j=0;j<courses[i].conflictingCourses.size();j++)
+        {
+            int id=courses[i].conflictingCourses[j];
+            if(courses[i].timeslot==courses[id].timeslot)cout<<0<<endl;
+        }
+    }
     }
 
     void SolvebyScheme3()
@@ -483,7 +474,7 @@ public:
         int slots=c.TimetablebyLargestDegree();
         double penalty=CalculatePenalty("linear");
 
-        cout<<"Not decided"<<endl;
+        cout<<"Largest Degree"<<endl;
         cout<<"time slots: "<<slots<<endl;
         cout<<"penalty: "<<penalty<<endl;
     }
@@ -530,7 +521,6 @@ main()
         }
         i++;
     }
-    cout<<i<<endl;
 
     for(int i=0;i<students.size();i++)
     {
@@ -545,5 +535,6 @@ main()
     }
 
     Solver solver;
-    solver.SolvebyScheme(1);
+    solver.SolvebyScheme(5);
+
 }
